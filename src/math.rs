@@ -1,4 +1,4 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
 #[derive(Debug)]
 pub struct MathError {
     what: String
@@ -10,9 +10,10 @@ impl MathError {
     }
 }
 
+// we extend std::result::Result into a custom type
 pub type Result<T> = ::std::result::Result<T, MathError>;
 
-#[allow(dead_code)]
+/// vector dot
 pub fn dot(a: &[f32], b: &[f32]) -> Result<f32> {
     let mut sum = 0.0;
 
@@ -26,7 +27,7 @@ pub fn dot(a: &[f32], b: &[f32]) -> Result<f32> {
     Ok(sum)
 }
 
-#[allow(dead_code)]
+/// vector subtraction
 pub fn diff(a: &[f32], b: &[f32]) -> Result<Vec<f32>> {
     let mut diff = Vec::new();
 
@@ -38,4 +39,18 @@ pub fn diff(a: &[f32], b: &[f32]) -> Result<Vec<f32>> {
         }
     }
     Ok(diff)
+}
+
+/// vector summation
+pub fn sum(a: &[f32], b: &[f32]) -> Result<Vec<f32>> {
+    let mut sum = Vec::new();
+
+    if a.len() != b.len() {
+        return Err(MathError::new("length mismatch"))
+    } else {
+        for i in 0 .. a.len() {
+            sum.push(a[i] + b[i])
+        }
+    }
+    Ok(sum)
 }
