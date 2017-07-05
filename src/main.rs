@@ -10,12 +10,18 @@ fn activation_func(val: f32) -> f32 { // leaky reLU (recified linear somethingor
     val
 }
 
-type Matrix = Vec<Vec<f32>>;
 type Vector = Vec<f32>;
+type Matrix = Vec<Vector>;
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 struct Layer {
+    /* size -> the number to nodes in the layer
+     * nodes -> Vec<f32>, the numerical value of the nodes (only used in the input layer)
+     * wieghts -> Option<Vec<Vec<f32>>>, weighting matrix, same # of cols as previous, same number of rows as `size`
+     * bias_weight -> f32, each layer has a bias weight (unused in the input layer)
+     * previous -> except for the input layer, each layer owns the previous one, which has to be heap allocated (Boxed)
+     */
     size: usize,
     nodes: Vector,
     weights: Option<Matrix>,
@@ -48,24 +54,27 @@ impl Layer {
     // RECURSIVE FUNCTION
     // each node's value is obtained by dotting a weight vector with a vector of all the nodes before
     // the weight vector is unique to this node
+    // 'a' is the name given to the value of a node before it goes through the activation function
     fn node_a(&self, node_number: usize) -> math::Result<f32> {
         if self.is_input_layer() {
             // if we're on the first layer, then the value of each node is simply part of the input
             // to the net
             return Ok(self.nodes[node_number]);
         } else {
-            /**
-            * if we're not in the first layer, then we have to calculate the value of each node from
-            * the value of all the previous nodes and this layer's weights. This is recursive.
-            */
-            let weights        = &self.weights.clone().unwrap()[node_number]; // pull out the right row from the matrix
-            let prev_layer     = self.previous.clone().unwrap();
+            /* if we're not in the first layer, then we have to calculate the value of each node from
+             * the value of all the previous nodes and this layer's weights and bias. This is recursive.
+             */
+            let weights = &self.weights.clone().unwrap()[node_number]; // pull out the right row from the matrix
+            let prev_layer = self.previous.clone().unwrap();
             let mut prev_nodes = Vector::new();
 
             for i in 0 .. prev_layer.size {
                 prev_nodes.push(prev_layer.node_val(i)) // calculate the value of each previous node
             }
-            return math::dot(weights, &prev_nodes) // dot the previous node vector with the weight vector
+
+            // dot the previous node vector with the weight vector
+            let a = math::dot(weights, &prev_nodes).unwrap() + 1.0*self.bias_weight;
+            Ok(a)
         }
     }
 
@@ -73,7 +82,7 @@ impl Layer {
     // which is then put through some kind of activation function
     fn node_val(&self, node_number: usize) -> f32 {
         let a = self.node_a(node_number).unwrap();
-        activation_func(a + 1.0*self.bias_weight)
+        activation_func(a)
     }
 
     fn is_input_layer(&self) -> bool {
@@ -90,7 +99,7 @@ fn main() {
     let mut middle_layer = Layer::new_ontop_of(input_layer, 2);
     let mut output_layer = Layer::new_ontop_of(middle_layer, 1);
 
-    println!("{:#?}", output_layer);
+    // println!("{:#?}", output_layer);
     println!("{:?}", output_layer.node_val(0));
 
 }
